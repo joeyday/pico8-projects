@@ -1,4 +1,3 @@
-# Matches multiple files with brace expansion notation
 [*.p8]
 indent_style = tab
 indent_size = 4
