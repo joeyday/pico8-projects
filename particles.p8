@@ -1,25 +1,21 @@
 pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
+-- main
+
 function _init()
 	cls(0)
 	
 	particles = {}
-	
-	function delstar(s)
-		del(particles, s)
-		add(particles, star(delstar, -1))
-	end
 	
 	for i = 1, 200 do
 		add(particles, star(delstar))
 	end
 	
 	for i = 1, 30 do
-		add(particles, particle())
+		add(particles, laser(dellaser))
 	end
 end
--- main
 
 function _update()
 	for p in all(particles) do
@@ -34,10 +30,21 @@ function _draw()
 		p:draw()
 	end
 end
--->8
--- particles
 
-function particle(x, y)
+-- delete functions
+function delstar(s)
+	del(particles, s)
+	add(particles, star(delstar, -1))
+end
+
+function dellaser(l)
+	del(particles, l)
+	add(particles, laser(dellaser))
+end
+-->8
+-- lasers
+
+function laser(delfn)
 	-- speed and direction
 	local velocity = rnd(2.5) + 0.5
 	local angle = rnd(1)
@@ -66,8 +73,7 @@ function particle(x, y)
 			y2 += dy
 			
 			if x1 <= -1 or x1 >= 128 or y1 <= -1 or y1 >= 128 then
-				del(particles, _)
-				add(particles, particle())
+				delfn(_)
 			end
 		end,
 
