@@ -39,26 +39,26 @@ end
 
 function particle(x, y)
 	-- speed and direction
- local velocity = rnd(2.5) + 0.5
- local angle = rnd(1)
- local l = 6
+	local velocity = rnd(2.5) + 0.5
+	local angle = rnd(1)
+	local l = 6
 
 	-- position
- local x1 = x or 64
+	local x1 = x or 64
 	local y1 = y or 64
- local x2 = x1 + l * cos(angle)
- local y2 = y1 + l * sin(angle)
+	local x2 = x1 + l * cos(angle)
+	local y2 = y1 + l * sin(angle)
 
 	-- convert vector to horiz.
 	-- and vert. components
- local	dx = velocity * cos(angle)
- local	dy = velocity * sin(angle)
-
+	local	dx = velocity * cos(angle)
+	local	dy = velocity * sin(angle)
+ 
 	-- color
- local	c = flr(rnd(15) + 1)
+	local	c = flr(rnd(15) + 1)
 
 	-- return table
- return {
+	return {
 		update = function (_)
 			x1 += dx
 			y1 += dy
@@ -80,22 +80,20 @@ end
 -- stars
 
 function star(delfn, y)
- -- position
- local	x = rnd(128)
- local	y = y or rnd(128)
+	-- position
+	local	x = rnd(128)
+	local	y = y or rnd(128)
 
- -- velocity
- local dy = rnd(2.5) + 0.5
+	-- velocity
+	local dy = rnd(2.5) + 0.5
 
 	-- color
- local colors = { 1, 5, 7, 7 }
- local	c = colors[ceil(dy * 1.3)]
+	local colors = { 1, 5, 7, 7 }
+	local	c = colors[ceil(dy * 1.3)]
  
- return {
- 	
- 
+	return {
 		update = function (_)
-		 y += dy
+			y += dy
 			
 			if y >= 128 then
 				delfn(_)
