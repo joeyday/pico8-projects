@@ -2,7 +2,6 @@ pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
 -- main
-
 function _init()
 	cls(0)
 	
@@ -43,7 +42,6 @@ function dellaser(l)
 end
 -->8
 -- lasers
-
 function laser(delfn)
 	-- speed and direction
 	local velocity = rnd(2.5) + 0.5
@@ -84,7 +82,6 @@ function laser(delfn)
 end
 -->8
 -- stars
-
 function star(delfn, y)
 	-- position
 	local	x = rnd(128)
