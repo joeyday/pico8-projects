@@ -8,11 +8,11 @@ function _init()
 	particles = {}
 	
 	for i = 1, 200 do
-		add(particles, star(delstar))
+		add(particles, star(del_star))
 	end
 	
 	for i = 1, 30 do
-		add(particles, laser(dellaser))
+		add(particles, laser(del_laser))
 	end
 end
 
@@ -31,18 +31,18 @@ function _draw()
 end
 
 -- delete functions
-function delstar(s)
+function del_star(s)
 	del(particles, s)
 	add(particles, star(delstar, -1))
 end
 
-function dellaser(l)
+function del_laser(l)
 	del(particles, l)
 	add(particles, laser(dellaser))
 end
 -->8
 -- lasers
-function laser(delfn)
+function laser(del_fn)
 	-- speed and direction
 	local velocity = rnd(2.5) + 0.5
 	local angle = rnd(1)
@@ -71,7 +71,7 @@ function laser(delfn)
 			y2 += dy
 			
 			if x1 <= -1 or x1 >= 128 or y1 <= -1 or y1 >= 128 then
-				delfn(_)
+				del_fn(_)
 			end
 		end,
 
@@ -82,7 +82,7 @@ function laser(delfn)
 end
 -->8
 -- stars
-function star(delfn, y)
+function star(del_fn, y)
 	-- position
 	local	x = rnd(128)
 	local	y = y or rnd(128)
@@ -99,7 +99,7 @@ function star(delfn, y)
 			y += dy
 			
 			if y >= 128 then
-				delfn(_)
+				del_fn(_)
 			end
 		end,
 
