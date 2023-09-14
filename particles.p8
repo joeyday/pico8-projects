@@ -33,12 +33,12 @@ end
 -- delete functions
 function del_star(s)
 	del(particles, s)
-	add(particles, star(delstar, -1))
+	add(particles, star(del_star, -1))
 end
 
 function del_laser(l)
 	del(particles, l)
-	add(particles, laser(dellaser))
+	add(particles, laser(del_laser))
 end
 -->8
 -- lasers
