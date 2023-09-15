@@ -9,33 +9,6 @@ function _init()
 	dialcol=0
 
 	-- constants
-	dx = {}
-	add(dx, cos(0.1666))
-	add(dx, cos(0.0833))
-	add(dx, 1)
-	add(dx, dx[2])
-	add(dx, dx[1])
-	add(dx, 0)
-	add(dx, -dx[1])
-	add(dx, -dx[2])
-	add(dx, -1)
-	add(dx, -dx[2])
-	add(dx, -dx[1])
-	add(dx, 0)
-	
-	dy = {}
-	add(dy, sin(0.1666))
-	add(dy, sin(0.0833))
-	add(dy, 0)
-	add(dy, -dy[2])
-	add(dy, -dy[1])
-	add(dy, 1)
-	add(dy, -dy[1])
-	add(dy, -dy[2])
-	add(dy, 0)
-	add(dy, dy[2])
-	add(dy, dy[1])
-	add(dy, -1)
 
 	d=29
 	
@@ -50,7 +23,6 @@ function _init()
 		 -- print(x..' '..y, 9)
 		end
 	end
-
 	fillp()
 	
 	-- draw clock
@@ -73,10 +45,6 @@ function _init()
 			-- print(x..' '..y, 9)
 		end
 	end
-	
-	-- draw 12 o'clock
-	-- pset(64, 51, 8)
-	-- line(63, 50, 65, 50, 8)
 	
 	for row=-1,1 do
  	for col=-1,1 do
@@ -111,65 +79,51 @@ end
 		end
 	end ]]
 	
-function drawhand(t,x,y)
-	local sx=8
-	local flip_x=false
-	local flip_y=false
-	if t==1 or t==5 or t==7 or t==11 then
-		sx=32
-	elseif t==2 or t==4 or t==8 or t==10 then
-		sx=56
-	elseif t==3 or t==9 then
-		sx=80
-	end
-	
-	if t>=7 and t<=11 then
-		flip_x=true
-	end
-
-	if t>=4 and t<=8 then
-		flip_y=true
-	end
-	
-	sspr(sx,0,21,21,x-10,y-10,21,21,flip_x,flip_y)	
+function drawhand(v,x,y)
+	sspr(c[v].sx,0,21,21,x-10,y-10,21,21,c[v].fx,c[v].fy)	
 end
 -->8
 -- pins
 
 -->8
 -- trig constants
-angles = {}
+c = {}
 
-a=0.16666 --starting
+a=0.16666 --starting angle
 
 for i=1,12 do
-	local angle={}
+	local const={}
 	
-	-- defaults
-	angle.a=a
-	angle.sx=8
-	angle.fx=false
-	angle.fy=false
+	-- useful trig values
+	const.a=a
+	const.dx=cos(a)
+	const.dy=sin(a)
+	
+	-- sprite defaults
+	const.sx=8
+	const.fx=false
+	const.fy=false
 	
 	-- sprite x coord
 	if i==1 or i==5 or i==7 or i==11 then
-		angle.sx=32
+		const.sx=32
 	elseif i==2 or i==4 or i==8 or i==10 then
-		angle.sx=56
+		const.sx=56
 	elseif i==3 or i==9 then
-		angle.sx=80
+		const.sx=80
 	end
 	
-	-- sprite mirror toggles
+	-- sprite flipping
 	if i>=7 and i<=11 then
-		angle.fx=true
+		const.fx=true
 	end
 	if i>=4 and i<=8 then
-		angle.fy=true
+		const.fy=true
 	end
 	
-	add(angles, angle)
+	add(c, const)
 	
+	-- decrement angle (clockwise)
 	a-=0.08333
 	if a<0 then
 		a=0.91666
