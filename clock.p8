@@ -8,6 +8,7 @@ function _init()
 	facecol=7
 	dialcol=0
 
+	-- constants
 	dx = {}
 	add(dx, cos(0.1666))
 	add(dx, cos(0.0833))
@@ -97,14 +98,19 @@ function _update()
 end
 
 function _draw()
- for r=0,1 do
+
+end
+
+
+-->8
+-- dials
+--[[ for r=0,1 do
  	for c=-1,0 do
 		 circfill(64+r*d, 64+c*d, 12, dialcol)
 			drawhand(t,64+r*d,64+c*d)
 		end
-	end
-end
-
+	end ]]
+	
 function drawhand(t,x,y)
 	local sx=8
 	local flip_x=false
@@ -127,6 +133,49 @@ function drawhand(t,x,y)
 	
 	sspr(sx,0,21,21,x-10,y-10,21,21,flip_x,flip_y)	
 end
+-->8
+-- pins
+
+-->8
+-- trig constants
+angles = {}
+
+a=0.16666 --starting
+
+for i=1,12 do
+	local angle={}
+	
+	-- defaults
+	angle.a=a
+	angle.sx=8
+	angle.fx=false
+	angle.fy=false
+	
+	-- sprite x coord
+	if i==1 or i==5 or i==7 or i==11 then
+		angle.sx=32
+	elseif i==2 or i==4 or i==8 or i==10 then
+		angle.sx=56
+	elseif i==3 or i==9 then
+		angle.sx=80
+	end
+	
+	-- sprite mirror toggles
+	if i>=7 and i<=11 then
+		angle.fx=true
+	end
+	if i>=4 and i<=8 then
+		angle.fy=true
+	end
+	
+	add(angles, angle)
+	
+	a-=0.08333
+	if a<0 then
+		a=0.91666
+	end
+end
+
 __gfx__
 00000000000000000050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
