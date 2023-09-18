@@ -1,11 +1,27 @@
 pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
---main
+--clock
+--by joey day
+
+--[[
+todo
+ - control tooltips
+ - win condition
+ - main menu
+	- about screen
+ - timer
+ - best times list
+ - best averages list?
+ - tommy cherry endorsement?
+]]
+
 function _init()
 	ct=make_ct()	--clocks table
 	pt=make_pt()	--pins table
 	make_graph(ct,pt)
+	
+	scramble()
 	
 	cur_x=1						--cursor x
 	cur_y=1						--cursor y
@@ -14,6 +30,8 @@ function _init()
 	c=make_c()			--useful constants
 	t=1										--touch counter
 	d=true							--draw flag
+	
+	--mode="selection"
 end
 
 function _update()
@@ -25,8 +43,8 @@ function _update()
 		right=btnp(⬅️)
 		left=btnp(➡️)
 	end
-
-	if (right or left) and not btn(❎) then
+	
+	if (left or right) and not btn(🅾️) then
 		local delta=2
 		if (left) delta=-2
 		cur_x+=delta
@@ -35,7 +53,7 @@ function _update()
 		d=true
 	end
 	
-	if (up or down) and not btn(❎) then
+	if (up or down) and not btn(🅾️) then
 		local delta=2
 		if (up) delta=-2
 		cur_y+=delta
@@ -44,7 +62,7 @@ function _update()
 		d=true
 	end
 	
-	if btn(❎) and (right or left) then
+	if btn(🅾️) and (left or right) then
 		t+=1
 		local delta=1
 		if (left) delta=-1
@@ -52,7 +70,11 @@ function _update()
 		d=true
 	end
 	
-	if btnp(🅾️) then
+	if btn(🅾️) and (up or down) then
+		pt[cur_x][cur_y].toggle()
+	end
+	
+	if btnp(❎) and not btn(🅾️) then
 		if cur_z==1 then
 			cur_z=2
 		else
@@ -60,6 +82,57 @@ function _update()
 		end
 		d=true
 	end
+
+	--[[
+	if mode=="selection" then
+		if (right or left) then
+			local delta=2
+			if (left) delta=-2
+			cur_x+=delta
+			if (cur_x<1) cur_x=1
+			if (cur_x>3) cur_x=3
+			d=true
+		end
+		
+		if (up or down) then
+			local delta=2
+			if (up) delta=-2
+			cur_y+=delta
+			if (cur_y<1) cur_y=1
+			if (cur_y>3) cur_y=3
+			d=true
+		end
+		
+		if btnp(🅾️) then
+			mode="movement"
+		end
+		
+		if btnp(❎) then
+			if cur_z==1 then
+				cur_z=2
+			else
+				cur_z=1
+			end
+			d=true
+		end
+	elseif mode=="movement" then
+		if left or right or up or down then
+			t+=1
+			local delta=1
+			if (left or down) delta=-1
+			ct[cur_x][cur_y][cur_z].update(delta,t)
+			d=true
+		end
+		
+		if btnp(🅾️) then
+			pt[cur_x][cur_y].toggle()
+		end
+		
+		if btnp(❎) then
+			mode="selection"
+		end
+	end
+	]]
 end
 
 function _draw()
@@ -96,6 +169,14 @@ function _draw()
 			clock.draw(64,64,d,cur_z)
 		end
 	end
+	
+	--pins
+	for x=1,3,2 do
+		for y=1,3,2 do
+			local pin=pt[x][y]
+			pin.draw(64,64,d,cur_z)
+		end
+	end
 
 	-- draw ticks
 	for row=-1,1 do
@@ -120,11 +201,14 @@ function _draw()
 		if (cur_x==1) draw_cur_x=3
 		if (cur_x==3) draw_cur_x=1
 	end
+	if mode=="movement" then
+		pal(12,11)
+	end
 	circfill(
 		(draw_cur_x-1)*54+10,
 		(cur_y-1)*54+10,
 		3,
-		11
+		12
 	)
 	
 	d=false
@@ -192,6 +276,9 @@ function new_c(x,y,z)
 				fx=not c[o].fx
 			end
 			sspr(c[o].sx,0,21,21,draw_x-10,draw_y-10,21,21,fx,c[o].fy)
+		end,
+		scramble=function ()
+			o=flr(rnd(12))+1
 		end
 	}
 end
@@ -202,7 +289,7 @@ function make_pt()
 
 	for x=1,3,2 do
 		for y=1,3,2 do
-			pt[x][y] = new_p()
+			pt[x][y] = new_p(x,y)
 		end
 	end
 
@@ -211,7 +298,7 @@ end
 
 function new_p(x,y)
 	--private properties
-	local z=flr(rnd(2))+1	--position
+	local z=1	--position
 	local ct={{},{}}	--linked clocks table
 	local lt=0							--last touch
 
@@ -219,6 +306,13 @@ function new_p(x,y)
 	return {
 		read=function ()
 			return z
+		end,
+		toggle=function ()
+			if z==1 then
+				z=2
+			else
+				z=1
+			end
 		end,
 		update=function (d,t,cz)
 			if (t<=lt) return
@@ -230,6 +324,26 @@ function new_p(x,y)
 		end,
 		add_c=function (c,z)
 			add(ct[z],c)
+		end,
+		draw=function (input_x,input_y,d,cur_z)
+			local local_x=x
+			local local_y=y
+			if (cur_z==2) then
+				if (x==1) local_x=3
+				if (x==3) local_x=1
+			end
+			draw_x=input_x-d/2+(local_x-1)*d/2
+			draw_y=input_y-d/2+(local_y-1)*d/2
+			circ(draw_x,draw_y,3,6)
+			if cur_z==z then
+				--fillp(▒)
+				--circfill(draw_x+2,draw_y+2,2,6)
+				--fillp()
+				circfill(draw_x,draw_y,2,0)
+			end
+		end,
+		scramble=function ()
+			z=flr(rnd(2))+1
 		end
 	}
 end
@@ -339,7 +453,21 @@ function make_c()
 end
 -->8
 --scramble and solve
-
+function scramble()
+	for x=1,3 do
+		for y=1,3 do
+			for z=1,2 do
+				ct[x][y][z].scramble()
+			end
+		end
+	end
+	
+	for x=1,3,2 do
+		for y=1,3,2 do
+			pt[x][y].scramble()
+		end
+	end
+end
 -->8
 --helpers
 function draw_shape(x,y,d,r,c)
@@ -368,3 +496,133 @@ __gfx__
 00000000000000000707000000000000000000000707000000000000000000000707060000000000000000000707777777760000000000000000000000000000
 00000000000000000575000000000000000000000575000000000000000000000575000000000000000000000575577765000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000
+__label__
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddd7777777777777ddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddddddddddddddddddddddd77777777777777777777777dddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddd77777777777777777777777777777ddddddddddddddddddddddddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddddddddddddddddd77777777777777777777777777777777777dddddddddddddddddddddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddddddddddddddd777777777777777777777777777777777777777dddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddd777777777777777777777777777777777777777777777777777777777ddddddddddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddd777777777777777777777777777777777777777777777777777777777777777dddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddd77777777777777777777777777777777777777777777777777777777777777777ddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddd777777778887777777777777777777777888777777777777777777777788877777777ddddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddddd77776777778777767777777777777677777877776777777777777767777787777677777dddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddd7777777770000077777777777777777777000007777777777777777777700000777777777ddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddd7777777000000000777777777777777700000000077777777777777770000000007777777ddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddd777777000000000000077777777777700000000007007777777777770000000000700777777dddddddddddddddddddddddddd
+dddddddddddddddddddddddddd777777000000000000000777777777700000000007700077777777770000000000770007777771dddddddddddddddddddddddd
+dddddddddddddddddddddddddd77767700000000000000077677776770000000007760007767777677000000000776000776777d1ddddddddddddddddddddddd
+dddddddddddddddddddddddddd777770000000000000000077777777000000000777500007777777700000000077750000777771d1dddddddddddddddddddddd
+ddddddddddddddddddddddddd77777700000000000000000777777770000000067770000077777777000000006777000007777771ddddddddddddddddddddddd
+ddddddddddddddddddddddddd7777700000000000000000007777770000000000776000000777777000000000077600000077777d1dddddddddddddddddddddd
+ddddddddddddddddddddddddd77777000000005750000000077777700000000576050000007777770000000057605000000777771d1ddddddddddddddddddddd
+ddddddddddddddddddddddddd7776700000000707060000007677670000000070700000000767767000000007070000000076777d1d1dddddddddddddddddddd
+ddddddddddddddddddddddddd77777000000005767770000077777700000000575000000007777770000000057500000000777771d1ddddddddddddddddddddd
+ddddddddddddddddddddddddd7777700000000000777700007777770000000000000000000777777000000000000000000077777d1d1dddddddddddddddddddd
+ddddddddddddddddddddddddd77777700000000056777700777777770000000000000000077777777000000000000000007777771d1d1ddddddddddddddddddd
+ddddddddddddddddddddddddd7777770000000000005677077777777000000000000000007777777700000000000000000777777d1d1dddddddddddddddddddd
+ddddddddddddddddddddddddd77777770000000000000007767777777000000000000000776777777700000000000000077677771d1d1ddddddddddddddddddd
+dddddddddddddddddddddddd7777767700000000000000077777776770000000000000007777777677000000000000000777777771d1dddddddddddddddddddd
+dddddddddddddddddddddddd777777777000000000000077777777777700000000000007777777777770000000000000777777777d1d1ddddddddddddddddddd
+ddddddddddddddddddddddd77777777777700000000077777777777777770000000007777777777777777000000000777777777777d1dddddddddddddddddddd
+ddddddddddddddddddddddd777777777777770000077777777666777777777000007777777766677777777700000777777777777771d1ddddddddddddddddddd
+ddddddddddddddddddddddd77777777777677777777767777600067777767777777776777767776777776777777777677777777777d1dddddddddddddddddddd
+dddddddddddddddddddddd7777777777777777767777777760000067777777776777777776777776777777777677777777777777777d1ddddddddddddddddddd
+dddddddddddddddddddddd77777777777777777777777777600000677777777777777777767777767777777777777777777777777771d1dddddddddddddddddd
+dddddddddddddddddddddd7777777777777777777777777760000067777777777777777776777776777777777777777777777777777d1d1ddddddddddddddddd
+ddddddddddddddddddddd777777777777777778887777777760006777777777888777777776777677777777788877777777777777777d1dddddddddddddddddd
+ddddddddddddddddddddd7777777777776777778777767777766677777677777877776777776667777767777787777677777777777771d1ddddddddddddddddd
+ddddddddddddddddddddd777777777777777700000777777777777777777770000077777777777777777777006007777777777777777d1d1dddddddddddddddd
+ddddddddddddddddddddd7777777777777700000000077777777777777770000000007777777777777777000070000777777777777771d1ddddddddddddddddd
+ddddddddddddddddddddd777777777777000000000000077777777777700000000000007777777777770000057500000777777777777d1d1dddddddddddddddd
+dddddddddddddddddddd77777777777700000000000000077777777770000000000000007777777777000000676000000777777777777d1d1ddddddddddddddd
+dddddddddddddddddddd777777777677000000000000000776777767700000000000000077677776770000007770000007767777777771d1dddddddddddddddd
+dddddddddddddddddddd77777777777000000000000000007777777700000000000000000777777770000005777500000077777777777d1d1ddddddddddddddd
+dddddddddddddddddddd777777777770000000000000000077777777000000000000000007777777700000067776000000777777777771d1dddddddddddddddd
+dddddddddddddddddddd77777777770000056000000000000777777000000000000650000077777700000000575000000007777777777d1d1ddddddddddddddd
+dddddddddddddddddddd777777777700567775575000000007777770000000057557776500777777000000005750000000077777777771d1d1dddddddddddddd
+dddddddddddddddddddd77777777676777777770700000000767767000000007077777777676776700000000707000000007677777777d1d1ddddddddddddddd
+dddddddddddddddddddd777777777700567775575000000007777770000000057557776500777777000000005750000000077777777771d1d1dddddddddddddd
+dddddddddddddddddddd77777777770000056000000000000777777000000000000650000077777700000000000000000007777777777d1d1ddddddddddddddd
+dddddddddddddddddddd777777777770000000000000000077777777000000000000000007777777700000000000000000777777777771d1d1dddddddddddddd
+dddddddddddddddddddd77777777777000000000000000007777777700000000000000000777777770000000000000000077777777777d1d1ddddddddddddddd
+dddddddddddddddddddd777777777777000000000000000776777777700000000000000077677777770000000000000007767777777771d1d1dddddddddddddd
+dddddddddddddddddddd77777777767700000000000000077777776770000000000000007777777677000000000000000777777777777d1d1ddddddddddddddd
+ddddddddddddddddddddd777777777777000000000000077777777777700000000000007777777777770000000000000777777777777d1d1d1dddddddddddddd
+ddddddddddddddddddddd7777777777777700000000077777777777777770000000007777777777777777000000000777777777777771d1d1ddddddddddddddd
+ddddddddddddddddddddd777777777777777700000777777776667777777770000077777777666777777777000007777777777777777d1d1d1dddddddddddddd
+ddddddddddddddddddddd7777777777777677777777767777600067777767777777776777760006777776777777777677777777777771d1d1ddddddddddddddd
+ddddddddddddddddddddd777777777777777777677777777600000677777777767777777760000067777777776777777777777777777d1d1d1dddddddddddddd
+dddddddddddddddddddddd7777777777777777777777777760000067777777777777777776000006777777777777777777777777777d1d1d1ddddddddddddddd
+dddddddddddddddddddddd77777777777777777777777777600000677777777777777777760000067777777777777777777777777771d1d1dddddddddddddddd
+dddddddddddddddddddddd7777777777777777888777777776000677777777788877777777600067777777778887777777777777777d1d1d1ddddddddddddddd
+ddddddddddddddddddddddd77777777776777778777767777766677777677777877776777776667777767777787777677777777777d1d1d1dddddddddddddddd
+ddddddddddddddddddddddd777777777777770000077777777777777777777000007777777777777777777700000777777777777771d1d1d1ddddddddddddddd
+ddddddddddddddddddddddd77777777777700000000077777777777777770000000007777777777777777000000000777777777777d1d1d1dddddddddddddddd
+dddddddddddddddddddddddd777777777000000000000077777777777700000000000007777777777770000000000000777777777d1d1d1ddddddddddddddddd
+dddddddddddddddddddddddd7777777700000000000000077777777770000000000000007777777777000000000000000777777771d1d1d1dddddddddddddddd
+ddddddddddddddddddddddddd77776770000000000000007767777677000000000000000776777767700000000000000077677771d1d1d1ddddddddddddddddd
+ddddddddddddddddddddddddd7777770000000000000000077777777000000000000000007777777700000000000000000777777d1d1d1dddddddddddddddddd
+ddddddddddddddddddddddddd77777700000000000000000777777770000000000000000077777777000000000000000007777771d1d1d1ddddddddddddddddd
+ddddddddddddddddddddddddd7777700000000000000000007777770000000000000000000777777000005600000000000077777d1d1d1dddddddddddddddddd
+ddddddddddddddddddddddddd77777000000005750000000077777700000000575000000007777770056777557500000000777771d1d1ddddddddddddddddddd
+ddddddddddddddddddddddddd7776700000000707060000007677670000000070706000000767767677777777070000000076777d1d1dddddddddddddddddddd
+ddddddddddddddddddddddddd77777000000005767770000077777700000000576777000007777770056777557500000000777771d1d1ddddddddddddddddddd
+ddddddddddddddddddddddddd7777700000000000777700007777770000000000077770000777777000005600000000000077777d1d1dddddddddddddddddddd
+ddddddddddddddddddddddddd77777700000000056777700777777770000000005677770077777777000000000000000007777771d1d1ddddddddddddddddddd
+dddddddddddddddddddddddddd777770000000000005677077777777000000000000567707777777700000000000000000777771d1d1dddddddddddddddddddd
+dddddddddddddddddddddddddd77777700000000000000077677777770000000000000007767777777000000000000000776777d1d1d1ddddddddddddddddddd
+dddddddddddddddddddddddddd777677000000000000000777777767700000000000000077777776770000000000000007777771d1d1dddddddddddddddddddd
+ddddddddddddddddddddddddddd7777770000000000000777777777777000000000000077777777777700000000000007777771d1d1d1ddddddddddddddddddd
+dddddddddddddddddddddddddddd77777770000000007777777777777777000000000777777777777777700000000077777771d1d1d1dddddddddddddddddddd
+dddddddddddddddddddddddddddd7777777770000077777777777777777777000007777777777777777777700000777777777d1d1d1ddddddddddddddddddddd
+ddddddddddddddddddddddddddddd77777677777777767777777777777767777777776777777777777776777777777677777d1d1d1d1dddddddddddddddddddd
+dddddddddddddddddddddddddddddd777777777677777777777777777777777767777777777777777777777776777777777d1d1d1d1ddddddddddddddddddddd
+dddddddddddddddddddddddddddddddd777777777777777777777777777777777777777777777777777777777777777771d1d1d1d1dddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddd7777777777777777777777777777777777777777777777777777777777777771d1d1d1d1ddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddd1d17777777777777777777777777777777777777777777777777777777771d1d1d1d1d1d1dddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddd1d1d1d1d1d17777777777777777777777777777777777777771d1d1d1d1d1d1d1d1d1d1ddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddddd1d1d1d1d1d1d77777777777777777777777777777777777d1d1d1d1d1d1d1d1d1d1d1dddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddd1d1d1d1d1d1d77777777777777777777777777777d1d1d1d1d1d1d1d1d1d1d1ddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddddddddd1d1d1d1d1d1d1d77777777777777777777777d1d1d1d1d1d1d1d1d1d1d1d1dddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddd1d1d1d1d1d1d1d1d7777777777777d1d1d1d1d1d1d1d1d1d1d1d1d1ddddddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddddddddddddddddddddd1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1dddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddd1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1ddddddddddddddddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddddddddddddddddddddddddd1d1d1d1d1d1d1d1d1d1d1d1d1d1d1dddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddd1d1d1d1d1d1d1d1d1d1d1d1ddddddddddddddddddddddddddddddddddddddddddddddd
+ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd1d1d1d1d1d1d1dddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddbbbdddddddd
+ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddbbbbbddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddbbbbbbbdddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddbbbbbbbdddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddbbbbbbbdddddd
+ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddbbbbbddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddbbbdddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+
