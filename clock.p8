@@ -27,7 +27,7 @@ function _init()
 	cur_y=1							--cursor y
 	cur_z=1							--cursor z (flipped)
 	cur_color=10
-	cur_move_color=9
+	cur_move_color=11
 	cur_mode="select"
 
 	c=make_c()				--useful constants
