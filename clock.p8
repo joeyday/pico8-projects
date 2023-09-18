@@ -17,21 +17,23 @@ todo
 ]]
 
 function _init()
-	ct=make_ct()	--clocks table
-	pt=make_pt()	--pins table
+	ct=make_ct()		--clocks table
+	pt=make_pt()		--pins table
 	make_graph(ct,pt)
 	
 	scramble()
 	
-	cur_x=1						--cursor x
-	cur_y=1						--cursor y
-	cur_z=1						--cursor z (flipped)
+	cur_x=1							--cursor x
+	cur_y=1							--cursor y
+	cur_z=1							--cursor z (flipped)
+	cur_color=10
+	cur_move_color=9
+	cur_mode="select"
 
-	c=make_c()			--useful constants
-	t=1										--touch counter
-	d=true							--draw flag
+	c=make_c()				--useful constants
+	t=1											--touch counter
+	dirty=true		 	--flag to redraw
 	
-	--mode="selection"
 end
 
 function _update()
@@ -50,7 +52,7 @@ function _update()
 		cur_x+=delta
 		if (cur_x<1) cur_x=1
 		if (cur_x>3) cur_x=3
-		d=true
+		dirty=true
 	end
 	
 	if (up or down) and not btn(🅾️) then
@@ -59,7 +61,17 @@ function _update()
 		cur_y+=delta
 		if (cur_y<1) cur_y=1
 		if (cur_y>3) cur_y=3
-		d=true
+		dirty=true
+	end
+	
+	if cur_mode=="move" and not btn(🅾️) then
+		cur_mode="select"
+		dirty=true
+	end
+	
+	if cur_mode=="select" and btn(🅾️) then
+		cur_mode="move"
+		dirty=true
 	end
 	
 	if btn(🅾️) and (left or right) then
@@ -67,11 +79,12 @@ function _update()
 		local delta=1
 		if (left) delta=-1
 		ct[cur_x][cur_y][cur_z].update(delta,t)
-		d=true
+		dirty=true
 	end
 	
 	if btn(🅾️) and (up or down) then
 		pt[cur_x][cur_y].toggle()
+		dirty=true
 	end
 	
 	if btnp(❎) and not btn(🅾️) then
@@ -80,63 +93,12 @@ function _update()
 		else
 			cur_z=1
 		end
-		d=true
+		dirty=true
 	end
-
-	--[[
-	if mode=="selection" then
-		if (right or left) then
-			local delta=2
-			if (left) delta=-2
-			cur_x+=delta
-			if (cur_x<1) cur_x=1
-			if (cur_x>3) cur_x=3
-			d=true
-		end
-		
-		if (up or down) then
-			local delta=2
-			if (up) delta=-2
-			cur_y+=delta
-			if (cur_y<1) cur_y=1
-			if (cur_y>3) cur_y=3
-			d=true
-		end
-		
-		if btnp(🅾️) then
-			mode="movement"
-		end
-		
-		if btnp(❎) then
-			if cur_z==1 then
-				cur_z=2
-			else
-				cur_z=1
-			end
-			d=true
-		end
-	elseif mode=="movement" then
-		if left or right or up or down then
-			t+=1
-			local delta=1
-			if (left or down) delta=-1
-			ct[cur_x][cur_y][cur_z].update(delta,t)
-			d=true
-		end
-		
-		if btnp(🅾️) then
-			pt[cur_x][cur_y].toggle()
-		end
-		
-		if btnp(❎) then
-			mode="selection"
-		end
-	end
-	]]
 end
 
 function _draw()
-	if (not d) return
+	if (not dirty) return
 
 	--adjust size
 	local d=25
@@ -156,17 +118,35 @@ function _draw()
 
 	--shadow
 	fillp(▒)
-		draw_shape(69,69,d,r,1)
+		draw_shape(69,63,d,r,1)
+	fillp()
+
+	--draw dial cursor
+	if cur_mode=="move" then
+		pal(cur_color,cur_move_color)
+	end
+	local draw_cur_x=cur_x
+	if cur_z==2 then
+		if (cur_x==1) draw_cur_x=3
+		if (cur_x==3) draw_cur_x=1
+	end
+	fillp(▒)
+	circfill(
+		64-25+(draw_cur_x-1)*25,
+		58-25+(cur_y-1)*25,
+		21,
+		cur_color
+	)
 	fillp()
 
 	--puzzle
-	draw_shape(64,64,d,r,7)
+	draw_shape(64,58,d,r,7)
 
 	--clocks
 	for x=1,3 do
  	for y=1,3 do
 			local clock=ct[x][y][cur_z]
-			clock.draw(64,64,d,cur_z)
+			clock.draw(64,58,d,cur_z)
 		end
 	end
 	
@@ -174,7 +154,7 @@ function _draw()
 	for x=1,3,2 do
 		for y=1,3,2 do
 			local pin=pt[x][y]
-			pin.draw(64,64,d,cur_z)
+			pin.draw(64,58,d,cur_z)
 		end
 	end
 
@@ -183,11 +163,11 @@ function _draw()
 		for col=-1,1 do
 			for t=1,12 do
 				if t==12 then
-					spr(14,64+col*d-1,64+row*d-11)
+					spr(14,64+col*d-1,58+row*d-11)
 				else
 					pset(
 						64.5+col*d+c[t].dx*11,
-						64.5+row*d+c[t].dy*11,
+						58.5+row*d+c[t].dy*11,
 						6
 					)
 				end
@@ -195,23 +175,51 @@ function _draw()
 		end
 	end
 	
-	--draw cursor
-	local draw_cur_x=cur_x
-	if cur_z==2 then
-		if (cur_x==1) draw_cur_x=3
-		if (cur_x==3) draw_cur_x=1
-	end
-	if mode=="movement" then
-		pal(12,11)
-	end
-	circfill(
-		(draw_cur_x-1)*54+10,
-		(cur_y-1)*54+10,
-		3,
-		12
+	--draw pin cursor
+	circ(
+		64-12.5+(draw_cur_x-1)*12.5,
+		58-12.5+(cur_y-1)*12.5,
+		5,
+		cur_color
 	)
 	
-	d=false
+	--draw controls
+	if not btn(🅾️) then
+		print("⬆️",14,112,1)
+		btnfill(14,112,1)
+		print("⬆️",13,111,cur_color)
+		print("⬅️  ➡️ select",6,115,1)
+		btnfill(6,115,1)
+		btnfill(22,115,1)
+		print("⬅️  ➡️ select",5,114,cur_color)
+		print("⬇️",14,118,1)
+		btnfill(14,118,1)
+		print("⬇️",13,117,cur_color)
+		
+		print("🅾️ move (hold)",70,111,1)
+		btnfill(70,111,1)
+		print("🅾️ move (hold)",69,110,cur_color)
+		
+		print("❎ flip",70,119,1)
+		btnfill(70,119,1)
+		print("❎ flip",69,118,cur_color)
+	else
+		print("⬆️",7,112,1)
+		btnfill(7,112,1)
+		print("⬆️",6,111,cur_color)
+		print("   toggle pin",7,115,1)
+		print("   toggle pin",6,114,cur_color)
+		print("⬇️",7,118,1)
+		btnfill(7,118,1)
+		print("⬇️",6,117,cur_color)
+		
+		print("⬅️➡️ turn dial",70,115,1)
+		btnfill(70,115,1)
+		btnfill(78,115,1)
+		print("⬅️➡️ turn dial",69,114,cur_color)
+	end
+	
+	dirty=false
 end
 -->8
 --clocks
@@ -480,6 +488,10 @@ function draw_shape(x,y,d,r,c)
 		 circfill(cx,cy,d/2+2,c)
 		end
 	end
+end
+
+function btnfill(x,y,c)
+	rectfill(x+1,y,x+5,y+4,c)
 end
 
 __gfx__
