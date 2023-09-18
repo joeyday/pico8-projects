@@ -6,7 +6,6 @@ __lua__
 
 --[[
 todo
- - control tooltips
  - win condition
  - main menu
 	- about screen
