@@ -15,6 +15,7 @@ todo
  - best averages list?
  - tommy cherry endorsement?
 	- whimsy!
+		- scramble animation?
 		- animated background?
 		- animated cursor?
 		- sound fx
