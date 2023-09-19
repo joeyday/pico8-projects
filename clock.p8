@@ -13,13 +13,14 @@ todo
  - timer
  - best times list
  - best averages list?
- - tommy cherry endorsement?
 	- whimsy!
 		- scramble animation?
 		- animated background?
 		- animated cursor?
 		- sound fx
 		- music
+	- tutorial?
+ - tommy cherry endorsement?
 ]]
 
 function _init()
@@ -27,7 +28,7 @@ function _init()
 	pt=make_pt()		--pins table
 	make_graph(ct,pt)
 	
-	scramble()
+	--scramble()
 	
 	cur_x=1							--cursor x
 	cur_y=1							--cursor y
@@ -39,6 +40,12 @@ function _init()
 	c=make_c()				--useful constants
 	t=1											--touch counter
 	dirty=true		 	--flag to redraw
+	iswin=false
+	timer=true
+	timing=false
+	
+	gt={}
+	gt.o=0
 	
 	menuitem(1,"new scramble",
 		function ()
@@ -91,11 +98,19 @@ function _update()
 		local delta=1
 		if (left) delta=-1
 		ct[cur_x][cur_y][cur_z].update(delta,t)
+		if timer and not timing then
+			timing=true
+			gt.o=time() --offset
+		end
 		dirty=true
 	end
 	
 	if btn(🅾️) and (up or down) then
 		pt[cur_x][cur_y].toggle()
+		if timer and not timing then
+			timing=true
+			gt.o=time() --offset
+		end
 		dirty=true
 	end
 	
@@ -107,9 +122,37 @@ function _update()
 		end
 		dirty=true
 	end
+	
+	--global time
+	gt.t=flr(time()*100)/100-gt.o
+	gt.m=flr(gt.t/60)
+	gt.s=flr(gt.t%60)
+	if gt.s<10 then
+		gt.s='0'..gt.s
+	end
+	gt.ms=flr(gt.t*100)%100
+	if gt.ms==0 then
+	 gt.ms='00'
+	elseif gt.ms<10 then
+		gt.ms='0'..gt.ms
+	end
+	
+	if dirty then
+		--check for win
+		iswin=check_win()
+	end
 end
 
 function _draw()
+	--timer
+	rectfill(97,4,124,9,13)
+	print(''..gt.m..':',97,5,1)
+	print(''..gt.m..':',96,4,9)
+	print(gt.s,105,5,1)
+	print(gt.s,104,4,9)
+	print('.'..gt.ms,114,5,1)
+	print('.'..gt.ms,113,4,9)
+
 	if (not dirty) return
 
 	--adjust size
@@ -229,6 +272,11 @@ function _draw()
 		btnfill(70,115,1)
 		btnfill(78,115,1)
 		print("⬅️➡️ turn dial",69,114,cur_color)
+	end
+	
+	if iswin then
+		print("congratulations!",5,5,1)
+		print("congratulations!",4,4,9)
 	end
 	
 	dirty=false
@@ -487,6 +535,22 @@ function scramble()
 			pt[x][y].scramble()
 		end
 	end
+end
+
+function check_win()
+	local iswin=true
+	
+	for x=1,3 do
+		for y=1,3 do
+			for z=1,2 do
+				if ct[x][y][z].read()!=12 then
+					iswin=false
+				end
+			end
+		end
+	end
+	
+	return iswin
 end
 -->8
 --helpers
