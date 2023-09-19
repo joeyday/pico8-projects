@@ -542,6 +542,8 @@ function scramble()
 			pt[x][y].scramble()
 		end
 	end
+	
+	timing=false
 end
 
 function check_win()
