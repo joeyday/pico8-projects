@@ -1,0 +1,80 @@
+pico-8 cartridge // http://www.pico-8.com
+version 41
+__lua__
+-- main
+function _init()
+	cls(0)
+	
+	particles = {}
+	
+	for i=1,50 do
+		add(particles, ball(del_ball))
+	end
+end
+
+function _update()
+	for p in all(particles) do
+		p:update()
+	end
+	
+	add(particles, ball(del_ball))
+end
+
+function _draw()
+	--cls(0)
+	for i=1,5000 do
+		pset(flr(rnd(128)),flr(rnd(128)),0)
+	end
+	
+	for p in all(particles) do
+		p:draw()
+	end
+end
+
+-- delete functions
+function del_ball(b)
+	del(particles, b)
+end
+-->8
+-- balls
+function ball(del_fn)
+	-- speed and direction
+	local velocity=rnd(2.5)+1
+	local angle=rnd(1)
+	local l=6
+
+	-- position
+	local x=x or 64
+	local y=y or 64
+
+	-- convert vector to horiz.
+	-- and vert. components
+	local	dx=velocity*cos(angle)
+	local	dy=velocity*sin(angle)
+ 
+	-- color
+	local	c=flr(rnd(15)+1)
+
+	-- return table
+	return {
+		update = function (_)
+			x+=dx
+			y+=dy
+			
+			if x<=-1 or x>=128 or y<=-1 or y>=128 then
+				del_fn(_)
+			end
+		end,
+
+		draw = function (_)
+			circfill(x, y, 4, c)
+		end
+	}
+end
+__gfx__
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
